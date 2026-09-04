@@ -3,7 +3,9 @@ include ('fsession.php');
 ini_set('memory_limit', '-1');
 
 if(!isset($_SESSION['farmer_login_user'])){
-header("location: ../index.php");} // Redirecting To Home Page
+header("location: ../index.php");
+exit;
+}
 $query4 = "SELECT * from farmerlogin where email='$user_check'";
               $ses_sq4 = mysqli_query($conn, $query4);
               $row4 = mysqli_fetch_assoc($ses_sq4);
@@ -22,50 +24,57 @@ $display_district_name = mysqli_fetch_array($display_district_result);
 $District_name_farmer=$display_district_name[0];
 
 
-// WeatherApi City_Id Code : 
-ini_set('memory_limit', '-1');
-$url = 'static/citylist.json'; // path to your JSON file
-$data = file_get_contents($url); // put the contents of the file into a variable
-$district= json_decode($data); // decode the JSON feed
-
-$district_weather_id=0;
-
-foreach ($district as $district) {
-        
-    if ($district->name == trim($District_name_farmer)) {
-        $district_weather_id=$district->id;
-    }
-}
-if($district_weather_id<=0){
-    $district_weather_id=1253952;
-	// Mangalore - 1263780   , Mysore - 1262321 , Udupi - 1253952
-}
-$city_weather_id=strval($district_weather_id);
-
-
-
-
 date_default_timezone_set("Asia/Kolkata");
-$apiKey = "870887df4d2b01335921fe396c69a360"; //Your API KEY 
-$cityId = $city_weather_id;
+$apiKey = app_env('OPENWEATHER_API_KEY', '');
 
+$cityMap = [
+    'Udupi' => 1253952,
+    'Mangalore' => 1263780,
+    'Mysore' => 1262321,
+    'Bangalore' => 1277333,
+    'Bengaluru' => 1277333,
+    'Bagalkot' => 1278896,
+    'Belgaum' => 1277636,
+    'Bellary' => 1277609,
+    'Bidar' => 1277258,
+    'Bijapur' => 1277156,
+    'Dharwad' => 1273185,
+    'Gulbarga' => 1270583,
+    'Hassan' => 1270116,
+    'Shimoga' => 1256379,
+    'Tumkur' => 1254187,
+    'Mumbai' => 1275339,
+    'Delhi' => 1273294,
+    'Pune' => 1259229,
+    'Chennai' => 1264527,
+    'Kolkata' => 1275004,
+    'Hyderabad' => 1269843,
+];
 
-// https://api.openweathermap.org/data/2.5/forecast?id=1275339&lang=en&units=metric&APPID=870887df4d2b01335921fe396c69a360;
+$districtClean = trim($District_name_farmer ?? '');
+$cityId = $cityMap[$districtClean] ?? 1253952;
 
-$googleApiUrl ="https://api.openweathermap.org/data/2.5/forecast?id=" . $cityId . "&lang=en&units=metric&APPID=" . $apiKey;
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-curl_setopt($ch, CURLOPT_VERBOSE, 0);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-$response = curl_exec($ch);
+if ($apiKey !== '') {
+    if (isset($cityMap[$districtClean])) {
+        $googleApiUrl = "https://api.openweathermap.org/data/2.5/forecast?id=" . $cityId . "&lang=en&units=metric&APPID=" . urlencode($apiKey);
+    } else {
+        $googleApiUrl = "https://api.openweathermap.org/data/2.5/forecast?q=" . urlencode($districtClean . ",IN") . "&lang=en&units=metric&APPID=" . urlencode($apiKey);
+    }
 
-curl_close($ch);
-$data = json_decode($response);
-$currentTime = time();
-$forecast = $data->list;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_VERBOSE, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $data = json_decode($response);
+    $forecast = isset($data->list) && is_array($data->list) ? $data->list : [];
+} else {
+    $forecast = [];
+}
 ?>
 
 
@@ -134,10 +143,12 @@ $forecast = $data->list;
     <tbody>
 	
 
-<?php $loop=0; foreach($forecast as $f){ $loop++;
+<?php 
+if (!empty($forecast)) {
+    $loop=0; foreach($forecast as $f){ $loop++;
 	
-$date = substr($f->dt_txt, 0, 10);
-$time = substr($f->dt_txt, 11);
+    $date = substr($f->dt_txt, 0, 10);
+    $time = substr($f->dt_txt, 11);
 ?>
 	<tr class="text-center">
 <td > <?php echo $date?> </td>	
@@ -153,7 +164,12 @@ $time = substr($f->dt_txt, 11);
 						
         <?php
              }
-        ?>   
+} else {
+?>
+    <tr><td colspan="6" class="text-center">Weather forecast is currently unavailable. Please configure OPENWEATHER_API_KEY in your environment (.env).</td></tr>
+<?php
+}
+?>   
     </tbody>
 </table>
 

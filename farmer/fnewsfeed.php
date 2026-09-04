@@ -20,17 +20,13 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
   
  <script>
   window.addEventListener("load", function() {
-    const endpoint = "https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=e13c1810209a4e6ca7997d39b797152c";
+    const endpoint = "https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=<?php echo urlencode(app_env('NEWS_API_KEY', '')); ?>";
     fetch(endpoint)
     .then(response => {
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       return response.json();
-    })
-    .then(data => {
-      console.log(data);
-      // do something with the response data here
     })
     .catch(error => {
       console.error("There was a problem fetching data from the API:", error);
@@ -92,16 +88,18 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
     <?php
 	error_reporting(E_ERROR | E_PARSE);
 
-	       // https://newsapi.org/v2/everything?q=Agriculture&sortBy=popularity&apiKey=e13c1810209a4e6ca7997d39b797152c
+	       // News API integration
 	
-        $url="https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=e13c1810209a4e6ca7997d39b797152c";   //Your API KEY
+        $apiKey = app_env('NEWS_API_KEY', '');
+        $url = $apiKey ? "https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=" . $apiKey : '';
 		
-        $response=file_get_contents($url);
-        $newsdata= json_decode($response);
+        $response = $url ? file_get_contents($url) : false;
+        $newsdata = $response ? json_decode($response) : null;
     ?>
         <?php
-            foreach($newsdata->articles as $news)
-            {
+            if ($newsdata && isset($newsdata->articles)) {
+                foreach($newsdata->articles as $news)
+                {
         ?>
 				 <tr class="text-center">
 							 <td> <img class="img img-thumbnail " src="<?php echo $news->urlToImage ?>" alt="News thumbnail" width="100px"> </td>
@@ -114,7 +112,12 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
 							
 						
         <?php
-             }
+                }
+            } else {
+        ?>
+            <tr><td colspan="5" class="text-center">News feed is unavailable. Configure NEWS_API_KEY in your environment.</td></tr>
+        <?php
+            }
         ?>   
     </tbody>
 </table>

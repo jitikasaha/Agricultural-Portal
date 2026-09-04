@@ -1,28 +1,32 @@
 import pandas as pd
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
 import json
+import os
 import sys
 
 # Get the input parameters as command line arguments
-jsonn = sys.argv[1]
-jsonp = sys.argv[2]
-jsonk = sys.argv[3]
-jsont = sys.argv[4]
-jsonh = sys.argv[5]
-jsonph = sys.argv[6]
-jsonr = sys.argv[7]
+def parse_val(arg):
+    try:
+        return float(json.loads(arg))
+    except Exception:
+        return float(arg)
 
-# Parse the JSON strings into Python objects
-n_params = json.loads(jsonn)
-p_params = json.loads(jsonp)
-k_params = json.loads(jsonk)
-t_params = json.loads(jsont)
-h_params = json.loads(jsonh)
-ph_params = json.loads(jsonph)
-r_params = json.loads(jsonr)
+n_params = parse_val(sys.argv[1])
+p_params = parse_val(sys.argv[2])
+k_params = parse_val(sys.argv[3])
+t_params = parse_val(sys.argv[4])
+h_params = parse_val(sys.argv[5])
+ph_params = parse_val(sys.argv[6])
+r_params = parse_val(sys.argv[7])
 
-#Read the dataset
-dataset = pd.read_csv('ML/crop_recommendation/Crop_recommendation.csv')
+# Read the dataset
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, 'Crop_recommendation.csv')
+if not os.path.exists(csv_path):
+    csv_path = 'ML/crop_recommendation/Crop_recommendation.csv'
+dataset = pd.read_csv(csv_path)
 
 #Divide the dataset into features and labels
 X = dataset.iloc[:, :-1].values

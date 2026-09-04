@@ -191,8 +191,8 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
 					$Jsoncrop=json_encode($crop);
 
 					$command = escapeshellcmd("python ML/fertilizer_recommendation/fertilizer_recommendation.py $Jsonn $Jsonp $Jsonk $Jsont $Jsonh $Jsonsm $Jsonsoil $Jsoncrop ");
-                    $output = passthru($command);
-					echo $output;					
+                    $output = shell_exec($command);
+					echo htmlspecialchars(trim($output ?? ''));					
 					}
                     ?>
 					</h4>

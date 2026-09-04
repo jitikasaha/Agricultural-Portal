@@ -125,8 +125,8 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
 					$Jmonth=json_encode($month);
 
 					$command = escapeshellcmd("python ML/rainfall_prediction/rainfall_prediction.py $Jregion $Jmonth ");
-                    $output = passthru($command);
-					echo $output;	
+                    $output = shell_exec($command);
+					echo htmlspecialchars(trim($output ?? ''));	
 					
 					}
 

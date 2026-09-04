@@ -1,125 +1,86 @@
 <?php
+session_start();
+if (empty(session_id())) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+}
 
-session_start(); // Starting Session
+require_once('../sql.php');
+$error = '';
 
-require('../sql.php'); // Includes Login Script
-global $error;
-
-// function for email validation
 function is_valid_email($email)
 {
-	global $conn;
-	global $error;
-	
-     $slquery = "SELECT cust_id FROM custlogin WHERE email = '$email'";
-     $selectresult = mysqli_query($conn, $slquery);
-	 $rowcount=mysqli_num_rows($selectresult);
-	   
-	 if ($rowcount==true) {
-		 
-		$error = '
-		
-		<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert">
-			<strong class="text-center text-dark ">This email already exists</strong>
-			  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-				<span aria-hidden="true">&times;</span>
-			  </button>
-			</div>
-		
-		';
-			
-		return false;		
- }
-    else  {
-        return true;
-     }
+    global $conn, $error;
+    $email = mysqli_real_escape_string($conn, trim($email));
+    $slquery = "SELECT cust_id FROM custlogin WHERE email = '$email'";
+    $selectresult = mysqli_query($conn, $slquery);
 
+    if ($selectresult && mysqli_num_rows($selectresult) > 0) {
+        $error = '<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert"><strong class="text-center text-dark">This email already exists</strong><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>';
+        return false;
+    }
+
+    return true;
 }
 
-
- 
-// function for password verification
-function is_valid_passwords($password,$cpassword) 
+function is_valid_passwords($password, $cpassword)
 {
-	global $error;
-	
-if ($password != $cpassword) {
-	
-			$error = '
-		
-		<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert">
-			<strong class="text-center text-dark ">Your passwords do not match. Please type carefully</strong>
-			  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-				<span aria-hidden="true">&times;</span>
-			  </button>
-			</div>
-		
-		';
-		
-         return false;
-     }
- else  {
-        return true;
-     }
+    global $error;
+    if ($password !== $cpassword) {
+        $error = '<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert"><strong class="text-center text-dark">Your passwords do not match. Please type carefully</strong><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>';
+        return false;
+    }
+    if (strlen($password) < 8) {
+        $error = '<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert"><strong class="text-center text-dark">Password must be at least 8 characters long</strong><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>';
+        return false;
+    }
+    return true;
 }
 
-// function for creating user
-function create_user($name, $password, $email, $mobile, $statename, $city, $address, $pincode) 
+function create_user($name, $password, $email, $mobile, $statename, $city, $address, $pincode)
 {
-	global $conn;
-	
-      $query = "INSERT INTO `custlogin` (cust_name, password, email, phone_no, state, city, address, pincode ) 
-	  VALUES ('$name', '$password', '$email', '$mobile', '$statename', '$city', '$address', '$pincode' )";
-      $result = mysqli_query($conn, $query);
-      if($result){
-          return true; // Success
-      }else{
-          return false; // Error somewhere
-      }
+    global $conn;
+    $name = mysqli_real_escape_string($conn, trim($name));
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+    $email = mysqli_real_escape_string($conn, trim($email));
+    $mobile = mysqli_real_escape_string($conn, trim($mobile));
+    $statename = mysqli_real_escape_string($conn, trim($statename));
+    $city = mysqli_real_escape_string($conn, trim($city));
+    $address = mysqli_real_escape_string($conn, trim($address));
+    $pincode = mysqli_real_escape_string($conn, trim($pincode));
+
+    $query = "INSERT INTO custlogin (cust_name, password, email, phone_no, state, city, address, pincode) VALUES ('$name', '$passwordHash', '$email', '$mobile', '$statename', '$city', '$address', '$pincode')";
+    $result = mysqli_query($conn, $query);
+    return $result ? true : false;
 }
 
+if (isset($_POST['email']) && isset($_POST['password']) && isset($_POST['confirmpassword'])) {
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $mobile = trim($_POST['mobile'] ?? '');
+    $state = trim($_POST['state'] ?? '');
+    $city = trim($_POST['city'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $pincode = trim($_POST['pincode'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $cpassword = trim($_POST['confirmpassword'] ?? '');
 
-// Code execution starts here after submit
-if (isset($_POST['email']) && isset($_POST['password']) && isset($_POST['confirmpassword'])){
+    $statename = '';
+    if ($state !== '') {
+        $query5 = "SELECT StateName FROM state WHERE StCode = '" . mysqli_real_escape_string($conn, $state) . "'";
+        $ses_sq5 = mysqli_query($conn, $query5);
+        $row5 = mysqli_fetch_assoc($ses_sq5);
+        $statename = $row5['StateName'] ?? '';
+    }
 
-    // Reading form values
-    $name = $_POST['name'];
-    $email = $_POST['email'];	
-	$mobile = $_POST['mobile'];
-    $state = $_POST['state'];
-	$city = $_POST['city'];
-	$address = $_POST['address'];
-	$pincode = $_POST['pincode'];
-    $password = $_POST['password'];
-    $cpassword = $_POST['confirmpassword'];
-
-
-$query5 = "SELECT StateName from state where StCode ='$state'";
-	$ses_sq5 = mysqli_query($conn, $query5);
-              $row5 = mysqli_fetch_assoc($ses_sq5);
-              $statename = $row5['StateName'];
-			  
-			  
-    if (is_valid_email($email) == true && is_valid_passwords($password,$cpassword) == true)
-    {	
-        if (create_user($name, $password, $email, $mobile, $statename, $city, $address, $pincode )) {
-			$_SESSION['customer_login_user']=$email; // Initializing Session    
-        header("location: ctwostep.php");
-        }else{
-			
-						$error = '
-		
-		<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert">
-			<strong class="text-center text-dark ">Error While Registering User</strong>
-			  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-				<span aria-hidden="true">&times;</span>
-			  </button>
-			</div>
-		
-		';
-
+    if (is_valid_email($email) && is_valid_passwords($password, $cpassword)) {
+        if (create_user($name, $password, $email, $mobile, $statename, $city, $address, $pincode)) {
+            $_SESSION['customer_login_user'] = $email;
+            header('Location: ctwostep.php');
+            exit;
         }
+
+        $error = '<div class="alert alert-info alert-dismissible fade show text-center" id="popup" role="alert"><strong class="text-center text-dark">Error While Registering User</strong><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>';
     }
 }
-    // You don't need to write another 'else' since this is the end of PHP code 
 ?>

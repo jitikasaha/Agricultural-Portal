@@ -5,7 +5,9 @@ include ('../sql.php');
 ini_set('memory_limit', '-1');
 
 if(!isset($_SESSION['customer_login_user'])){
-header("location: ../index.php");} // Redirecting To Home Page
+header("location: ../index.php");
+exit;
+}
 $query4 = "SELECT * from custlogin where email='$user_check'";
               $ses_sq4 = mysqli_query($conn, $query4);
               $row4 = mysqli_fetch_assoc($ses_sq4);
@@ -179,19 +181,18 @@ $query4 = "SELECT * from custlogin where email='$user_check'";
 						
 						$query5="SELECT Trade_crop from farmer_crops_trade where trade_id= $b";
 						$result5 = mysqli_query($conn, $query5);
-						$row5 = $result5->fetch_assoc(); 
-						$a=$row5["Trade_crop"];
+						$row5 = $result5 ? $result5->fetch_assoc() : null; 
+						$a=$row5 ? $row5["Trade_crop"] : '';
 						
-						
-						$query6="DELETE FROM `cart` WHERE `cropname` = '".$a."'";
-						$result6 = mysqli_query($conn, $query6); 
+						if ($a !== '') {
+							$stmtDel = $conn->prepare("DELETE FROM `cart` WHERE `cropname` = ? AND `cust_id` = ?");
+							$stmtDel->bind_param("si", $a, $para1);
+							$stmtDel->execute();
+						}
 
 						echo '<script>alert("Item Removed")</script>';
 						echo '<script>window.location="cbuy_crops.php"</script>';
-		
-
-					     
-						
+						exit;
 					}
 				}
 			}
@@ -214,30 +215,43 @@ $query4 = "SELECT * from custlogin where email='$user_check'";
 						
 							require_once "StripePayment/config.php";
 							
-								$TotalCartPrice=$_SESSION['Total_Cart_Price']*100;
-								
-								$session = \Stripe\Checkout\Session::create([
-									'payment_method_types' => ['card'],
-									'line_items' => [[
-										'price_data' => [
-											'product' => 'prod_NdAYaoDLX3DnMY',
-											'unit_amount' => $TotalCartPrice,
-											'currency' => 'inr',
-										],
-										'quantity' => 1,
-									]],
-									'mode' => 'payment',
-									'success_url' => 'http://localhost/agriculture_portal/customer/cupdatedb.php',
-									'cancel_url' => 'http://localhost/agriculture_portal/customer/cbuy_crops.php',
-								]);
+							$TotalCartPrice=(int)($_SESSION['Total_Cart_Price']*100);
+							$checkoutEnabled = !empty($stripeDetails['secretKey']) && !empty($stripeDetails['publishableKey']);
+							$checkoutSession = null;
+							if ($checkoutEnabled && $TotalCartPrice > 0) {
+								$baseUrl = app_env('APP_BASE_URL', '');
+								if ($baseUrl === '') {
+									$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+									$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+									$baseUrl = $scheme . '://' . $host;
+								}
+								try {
+									$checkoutSession = \Stripe\Checkout\Session::create([
+										'payment_method_types' => ['card'],
+										'line_items' => [[
+											'price_data' => [
+												'currency' => 'inr',
+												'product_data' => [
+													'name' => 'Agricultural Crops Order',
+												],
+												'unit_amount' => $TotalCartPrice,
+											],
+											'quantity' => 1,
+										]],
+										'mode' => 'payment',
+										'success_url' => $baseUrl . '/customer/cupdatedb.php',
+										'cancel_url' => $baseUrl . '/customer/cbuy_crops.php',
+									]);
+								} catch (\Exception $e) {
+									$checkoutSession = null;
+								}
+							}
 
-												
-
-    					?>
-						<button class="btn btn-info form-control" name="pay" type="submit" id="checkout-button">Pay</button>
-											
-						
-						</td>
+						?>
+						<?php if ($checkoutEnabled && $checkoutSession): ?>
+						<button class="btn btn-info form-control mb-2" name="pay" type="button" id="checkout-button">Pay via Stripe</button>
+						<?php endif; ?>
+						<a href="cupdatedb.php" class="btn btn-success form-control">Place Order (COD)</a>
 					</tr>
 					<?php
 					}
@@ -262,22 +276,23 @@ $query4 = "SELECT * from custlogin where email='$user_check'";
 </section>
 	   <?php require("footer.php");?>
 
-													<script src="https://js.stripe.com/v3/"></script>
-												<script>
-												const stripe = Stripe('<?php echo $stripeDetails['publishableKey']; ?>');
+<?php if ($checkoutEnabled && $checkoutSession): ?>
+											<script src="https://js.stripe.com/v3/"></script>
+											<script>
+											const stripe = Stripe('<?php echo $stripeDetails['publishableKey']; ?>');
+											const checkoutButton = document.getElementById('checkout-button');
 
-												const checkoutButton = document.getElementById('checkout-button');
-
-												checkoutButton.addEventListener('click', () => {
-												  stripe.redirectToCheckout({
-													sessionId: '<?php echo $session->id; ?>'
-												  }).then(function (result) {
-													if (result.error) {
-													  alert(result.error.message);
-													}
-												  });
-												});
-												</script>
+											checkoutButton.addEventListener('click', () => {
+											  stripe.redirectToCheckout({
+												sessionId: '<?php echo $checkoutSession->id; ?>'
+											  }).then(function (result) {
+												if (result.error) {
+												  alert(result.error.message);
+												}
+											  });
+											});
+											</script>
+											<?php endif; ?>
 												
 												
 <script>

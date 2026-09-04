@@ -1,34 +1,40 @@
 <?php
 session_start();
-$error = ''; // Variable To Store Error Message
+$error = '';
 
-require('../sql.php'); // Includes Login Script
+require('../sql.php');
 
+if (isset($_POST['adminlogin'])) {
+  $aname = trim($_POST['admin_name'] ?? '');
+  $apassword = trim($_POST['admin_password'] ?? '');
 
-if(isset($_POST ['adminlogin'])) {
-  $aname=$_POST['admin_name'];
-  $apassword=$_POST['admin_password'];
-  //$farmer_password=SHA1($farmer_password);
+  $stmt = $conn->prepare('SELECT * FROM admin WHERE admin_name = ? LIMIT 1');
+  $stmt->bind_param('s', $aname);
+  $stmt->execute();
+  $result = $stmt->get_result();
 
+  if ($result->num_rows === 1) {
+    $user = $result->fetch_assoc();
+    $storedPassword = $user['admin_password'] ?? '';
+    $passwordValid = password_verify($apassword, $storedPassword);
+    if (!$passwordValid && $storedPassword !== '' && $storedPassword === $apassword) {
+      $passwordValid = true;
+    }
 
-  $adminquery = "SELECT * from `admin` where admin_name='".$aname."' and admin_password='".$apassword."' ";
-  $result = mysqli_query($conn, $adminquery);
-  $rowcount=mysqli_num_rows($result);
-  
+    if ($passwordValid) {
+      if ($storedPassword !== '' && password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
+        $newHash = password_hash($apassword, PASSWORD_DEFAULT);
+        $updateStmt = $conn->prepare('UPDATE admin SET admin_password = ? WHERE admin_name = ?');
+        $updateStmt->bind_param('ss', $newHash, $aname);
+        $updateStmt->execute();
+      }
 
+      $_SESSION['admin_login_user'] = $aname;
+      header('Location: aprofile.php');
+      exit;
+    }
+  }
 
-  if ($rowcount==true) {
-    $_SESSION['admin_login_user']=$aname; // Initializing Session
-    
-//echo '<script type="text/javascript">alert("'.$_SESSION['admin_login_user'].'");</script>';
-
-   header("location: aprofile.php"); // Redirecting To Other Page
-    } 
-    else  {
-       $error = "Username or Password is invalid";
-     }
-    
- mysqli_close($conn); // Closing Connection
- 
+  $error = 'Username or Password is invalid';
 }
 ?>

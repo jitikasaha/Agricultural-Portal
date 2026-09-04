@@ -31,37 +31,4 @@
 <script src="../assets/js/state_district_crops_dropdown.js"></script>
 
 
-	<script>
-  window.addEventListener("load", function() {
-    const endpoint = "https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=e13c1810209a4e6ca7997d39b797152c";
-    fetch(endpoint)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log(data);
-      // do something with the response data here
-    })
-    .catch(error => {
-      console.error("There was a problem fetching data from the API:", error);
-    });
-  });
-</script>
-
-		  <script>
-var settings = {
-  "url": "https://newsapi.org/v2/everything?q=farmers&sortBy=popularity&apiKey=e13c1810209a4e6ca7997d39b797152c",
-  "method": "GET",
-  "timeout": 0,
-};
-
-$.ajax(settings).done(function (response) {
-  console.log(response);
-});
-
-</script>
-
 </head>

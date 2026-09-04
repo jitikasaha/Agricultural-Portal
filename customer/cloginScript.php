@@ -1,33 +1,41 @@
 <?php
-session_start(); // Starting Session
-$error = ''; // Variable To Store Error Message
+session_start();
+$error = '';
 
-require('../sql.php'); // Includes Login Script
+require('../sql.php');
 
-if(isset($_POST ['customerlogin'])) {
-    $customer_email=$_POST['cust_email'];
-    $customer_password=$_POST['cust_password'];
-  //$farmer_password=SHA1($farmer_password);
+if (isset($_POST['customerlogin'])) {
+    $customer_email = trim($_POST['cust_email'] ?? '');
+    $customer_password = trim($_POST['cust_password'] ?? '');
 
+    $stmt = $conn->prepare('SELECT * FROM custlogin WHERE email = ? LIMIT 1');
+    $stmt->bind_param('s', $customer_email);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    $checkquery = "SELECT * from `custlogin` where email='".$customer_email."' and password='".$customer_password."' ";
-  $result = mysqli_query($conn, $checkquery);
-  $rowcount=mysqli_num_rows($result);
-  if ($rowcount==true) {
-    $_SESSION['customer_login_user']=$customer_email; // Initializing Session
-	
-      $deletequery="DELETE FROM cart";
-      $deletecart=mysqli_query($conn,$deletequery);
+    if ($result->num_rows === 1) {
+        $user = $result->fetch_assoc();
+        $storedPassword = $user['password'] ?? '';
+        $passwordValid = password_verify($customer_password, $storedPassword);
+        if (!$passwordValid && $storedPassword !== '' && $storedPassword === $customer_password) {
+            $passwordValid = true;
+        }
 
-    header("location: ctwostep.php"); // Redirecting To Other Page
-    } 
-    else  {
-       $error = "Username or Password is invalid";
-     }
-    
- mysqli_close($conn); // Closing Connection
+        if ($passwordValid) {
+            if ($storedPassword !== '' && password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
+                $newHash = password_hash($customer_password, PASSWORD_DEFAULT);
+                $updateStmt = $conn->prepare('UPDATE custlogin SET password = ? WHERE email = ?');
+                $updateStmt->bind_param('ss', $newHash, $customer_email);
+                $updateStmt->execute();
+            }
 
+            $_SESSION['customer_login_user'] = $customer_email;
+            $conn->query('DELETE FROM cart');
+            header('Location: ctwostep.php');
+            exit;
+        }
+    }
+
+    $error = 'Username or Password is invalid';
 }
-
-
 ?>

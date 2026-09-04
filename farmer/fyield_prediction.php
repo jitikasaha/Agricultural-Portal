@@ -225,8 +225,8 @@ if (selectedDistrict && selectedSeason) {
 					$Jarea=json_encode($area);
 
 					$command = escapeshellcmd("python ML/yield_prediction/yield_prediction.py $Jstate $Jdistrict $Jseason $Jcrops $Jarea ");
-                    $output = passthru($command);
-					echo $output;	
+                    $output = shell_exec($command);
+					echo htmlspecialchars(trim($output ?? ''));	
 					
 					}
 

@@ -141,8 +141,8 @@ $query4 = "SELECT * from farmerlogin where email='$user_check'";
 					$JsonSeason=json_encode($season);
 					
 					$command = escapeshellcmd("python ML/crop_prediction/ZDecision_Tree_Model_Call.py $JsonState $JsonDistrict $JsonSeason");
-                    $output = passthru($command);
-					echo $output;					
+                    $output = shell_exec($command);
+					echo htmlspecialchars(trim($output ?? ''));					
 					}
                     ?>
 					</h4>

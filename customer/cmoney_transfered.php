@@ -5,27 +5,36 @@ include ('../sql.php');
 ini_set('memory_limit', '-1');
 date_default_timezone_set("Asia/Calcutta"); 
 
-if(!isset($_SESSION['Total_Cart_Price'])){
-header("location: cprofile.php");} // Redirecting To Home Page
+if (!isset($_SESSION['Total_Cart_Price']) && !isset($_SESSION['last_order_items'])) {
+    header("location: cprofile.php");
+    exit;
+}
+
 $query4 = "SELECT * from custlogin where email='$user_check'";
-              $ses_sq4 = mysqli_query($conn, $query4);
-              $row4 = mysqli_fetch_assoc($ses_sq4);
-              $para1 = $row4['cust_id'];
-              $para2 = $row4['cust_name'];
-              $para3 = $row4['password'];
-			  $para5 = $row4['email'];
-			  $para6 = $row4['phone_no'];
-			  $para7 = $row4['state'];
-			  $para8 = $row4['city'];
-			  $para9 = $row4['address'];
-			  $para10 = $row4['pincode'];
+$ses_sq4 = mysqli_query($conn, $query4);
+$row4 = mysqli_fetch_assoc($ses_sq4);
+$para1 = $row4['cust_id'] ?? '';
+$para2 = $row4['cust_name'] ?? '';
+$para3 = $row4['password'] ?? '';
+$para5 = $row4['email'] ?? '';
+$para6 = $row4['phone_no'] ?? '';
+$para7 = $row4['state'] ?? '';
+$para8 = $row4['city'] ?? '';
+$para9 = $row4['address'] ?? '';
+$para10 = $row4['pincode'] ?? '';
 
-$totalPrice = $_SESSION['Total_Cart_Price'];
-unset($_SESSION['Total_Cart_Price']); 
+$totalPrice = $_SESSION['Total_Cart_Price'] ?? 0;
+$orderItems = $_SESSION['last_order_items'] ?? [];
+if ($totalPrice == 0 && !empty($orderItems)) {
+    foreach ($orderItems as $it) {
+        $totalPrice += $it['price'];
+    }
+}
+unset($_SESSION['Total_Cart_Price']);
 
-//Cart Details Query
-$Cartquery="SELECT * from cart";
-$cartresult=mysqli_query($conn,$Cartquery);
+// Cart Details Query fallback
+$Cartquery = "SELECT * from cart WHERE cust_id = '" . (int)$para1 . "'";
+$cartresult = mysqli_query($conn, $Cartquery);
 
 
 
@@ -238,16 +247,26 @@ $cartresult=mysqli_query($conn,$Cartquery);
                   <tbody>
 
                     <?php
-                        while($rows=mysqli_fetch_assoc($cartresult))
-                        {
+                        if (!empty($orderItems)) {
+                            foreach ($orderItems as $rows) {
                     ?>
-
                             <tr>
                                 <td class="text-inverse"><?php echo ucfirst($rows['cropname']); ?></td>
                                 <td class="text-center"><?php echo $rows['quantity']; ?></td>
                                 <td class="text-center"><?php echo $rows['price']; ?></td>
                             </tr>
                     <?php
+                            }
+                        } elseif ($cartresult) {
+                            while($rows=mysqli_fetch_assoc($cartresult)) {
+                    ?>
+                            <tr>
+                                <td class="text-inverse"><?php echo ucfirst($rows['cropname']); ?></td>
+                                <td class="text-center"><?php echo $rows['quantity']; ?></td>
+                                <td class="text-center"><?php echo $rows['price']; ?></td>
+                            </tr>
+                    <?php
+                            }
                         }
                      ?>
                   

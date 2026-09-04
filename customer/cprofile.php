@@ -3,40 +3,53 @@ include ('csession.php');
 ini_set('memory_limit', '-1');
 
 if(!isset($_SESSION['customer_login_user'])){
-header("location: ../index.php");} // Redirecting To Home Page
+    header("location: ../index.php");
+    exit;
+}
 $query4 = "SELECT * from custlogin where email='$user_check'";
-              $ses_sq4 = mysqli_query($conn, $query4);
-              $row4 = mysqli_fetch_assoc($ses_sq4);
-              $para1 = $row4['cust_id'];
-              $para2 = $row4['cust_name'];
-              $para3 = $row4['password'];
-			  $para5 = $row4['email'];
-			  $para6 = $row4['phone_no'];
-			  $para7 = $row4['state'];
-			  $para8 = $row4['city'];
-			  $para9 = $row4['address'];
-			  $para10 = $row4['pincode'];
+$ses_sq4 = mysqli_query($conn, $query4);
+$row4 = mysqli_fetch_assoc($ses_sq4);
+$para1 = $row4['cust_id'] ?? '';
+$para2 = $row4['cust_name'] ?? '';
+$para3 = $row4['password'] ?? '';
+$para5 = $row4['email'] ?? '';
+$para6 = $row4['phone_no'] ?? '';
+$para7 = $row4['state'] ?? '';
+$para8 = $row4['city'] ?? '';
+$para9 = $row4['address'] ?? '';
+$para10 = $row4['pincode'] ?? '';
 
-		  
 if(isset($_POST['custupdate']))
   {
-	  $id = ($_POST['id']);
-	  $name = ($_POST['name']);
-	  $email = ($_POST['email']);
-	  $mobile = ($_POST['mobile']);
-	  $state = ($_POST['state']);
-		$city = ($_POST['city']);
-		$address = ($_POST['address']);
-		$pincode = ($_POST['pincode']);
-		$pass = ($_POST['pass']);
+	  $name = trim($_POST['name'] ?? '');
+	  $email = trim($_POST['email'] ?? '');
+	  $mobile = trim($_POST['mobile'] ?? '');
+	  $state = trim($_POST['state'] ?? '');
+	  $city = trim($_POST['city'] ?? '');
+	  $address = trim($_POST['address'] ?? '');
+	  $pincode = trim($_POST['pincode'] ?? '');
+	  $pass = trim($_POST['pass'] ?? '');
 
-$query5 = "SELECT StateName from state where StCode ='$state'";
-	$ses_sq5 = mysqli_query($conn, $query5);
-              $row5 = mysqli_fetch_assoc($ses_sq5);
-              $statename = $row5['StateName'];
-			  
-    $updatequery1 = "UPDATE custlogin set  cust_name='$name', email='$email', phone_no='$mobile',  state='$statename',  city='$city',  address='$address', pincode='$pincode', password='$pass'  where cust_id='$id'";mysqli_query($conn, $updatequery1);
-	 header("location: cprofile.php");
+      $statename = '';
+      if ($state !== '') {
+          $stmtState = $conn->prepare("SELECT StateName from state where StCode = ?");
+          $stmtState->bind_param("s", $state);
+          $stmtState->execute();
+          $row5 = $stmtState->get_result()->fetch_assoc();
+          $statename = $row5['StateName'] ?? $state;
+      }
+
+      $passwordToSave = $para3;
+      if ($pass !== '' && $pass !== $para3) {
+          $passwordToSave = password_hash($pass, PASSWORD_DEFAULT);
+      }
+
+      $stmtUp = $conn->prepare("UPDATE custlogin SET cust_name = ?, email = ?, phone_no = ?, state = ?, city = ?, address = ?, pincode = ?, password = ? WHERE cust_id = ?");
+      $stmtUp->bind_param("ssssssssi", $name, $email, $mobile, $statename, $city, $address, $pincode, $passwordToSave, $para1);
+      $stmtUp->execute();
+
+	  header("location: cprofile.php");
+      exit;
   }			  
 ?>
 

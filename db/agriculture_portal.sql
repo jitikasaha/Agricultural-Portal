@@ -48,6 +48,7 @@ INSERT INTO `admin` (`admin_id`, `admin_name`, `admin_password`) VALUES
 
 CREATE TABLE `cart` (
   `id` int(11) NOT NULL,
+  `cust_id` int(11) NOT NULL DEFAULT 0,
   `cropname` varchar(50) NOT NULL,
   `quantity` int(50) NOT NULL,
   `price` int(50) NOT NULL
@@ -976,7 +977,7 @@ ALTER TABLE `admin`
 --
 ALTER TABLE `cart`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `cropname` (`cropname`);
+  ADD KEY `cust_id` (`cust_id`);
 
 --
 -- Indexes for table `contactus`

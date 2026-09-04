@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    env_file:
+      - .env
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html
+      DB_HOST: db
+      DB_USERNAME: appuser
+      DB_PASSWORD: apppass
+      DB_NAME: agriculture_portal
+    depends_on:
+      - db
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: agriculture_portal
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/agriculture_portal.sql:/docker-entrypoint-initdb.d/init.sql:ro
+volumes:
+  mysql-data:

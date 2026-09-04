@@ -1,17 +1,7 @@
 <?php
 session_start();
+require_once __DIR__ . '/../../sql.php';
 $userlogin=$_SESSION['customer_login_user'];
-$servername="localhost";
-$username="root";
-$password="";
-$dbname="agriculture_portal";
-
-	//Create Connection 
-	$conn =mysqli_connect($servername, $username, $password, $dbname);
-	// Check connection
-	if ($conn->connect_error) {
-	die("Connection failed: " . $conn->connect_error);
-	}
 
 	require_once "config.php";
 

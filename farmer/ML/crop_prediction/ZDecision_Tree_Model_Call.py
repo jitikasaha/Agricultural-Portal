@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import joblib
 from collections import Counter
-import cgitb
-cgitb.enable()
+import warnings
+warnings.filterwarnings("ignore")
+import os
 import sys
 
 
@@ -89,7 +90,11 @@ def classify(row,node):
 
 
 
-dt_model_final= joblib.load('ML/crop_prediction/filetest2.pkl') 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+pkl_path = os.path.join(script_dir, 'filetest2.pkl')
+if not os.path.exists(pkl_path):
+    pkl_path = 'ML/crop_prediction/filetest2.pkl'
+dt_model_final = joblib.load(pkl_path)
 
 
 
@@ -108,8 +113,10 @@ for row in testing_data:
 
 
 
-for key, value in Predict_dict.items() :
-    print (key)
-    print ("  ,  ")
+crop_list = list(Predict_dict.keys())
+if crop_list:
+    print(", ".join(crop_list))
+else:
+    print("No specific crop prediction available for the selected region and season.")
 
 

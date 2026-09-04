@@ -6,37 +6,46 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 
-# Load the dataset
-df = pd.read_csv("ML/yield_prediction/crop_production_karnataka.csv")
+import warnings
+warnings.filterwarnings("ignore")
+import os
+import joblib
 
-# Drop the Crop_Year column
-df = df.drop(['Crop_Year'], axis=1)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(script_dir, "yield_model.joblib")
+ohe_path = os.path.join(script_dir, "yield_ohe.joblib")
 
-# Separate the features and target variables
-X = df.drop(['Production'], axis=1)
-y = df['Production']
+if os.path.exists(model_path) and os.path.exists(ohe_path):
+    model = joblib.load(model_path)
+    ohe = joblib.load(ohe_path)
+else:
+    # Load the dataset
+    csv_path = os.path.join(script_dir, "crop_production_karnataka.csv")
+    if not os.path.exists(csv_path):
+        csv_path = "ML/yield_prediction/crop_production_karnataka.csv"
+    df = pd.read_csv(csv_path)
+    df = df.drop(['Crop_Year'], axis=1)
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X = df.drop(['Production'], axis=1)
+    y = df['Production']
 
-# Categorical columns for one-hot encoding
-categorical_cols = ['State_Name', 'District_Name', 'Season', 'Crop']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    categorical_cols = ['State_Name', 'District_Name', 'Season', 'Crop']
 
-# One-hot encode the categorical columns
-ohe = OneHotEncoder(handle_unknown='ignore')
-ohe.fit(X_train[categorical_cols])
+    ohe = OneHotEncoder(handle_unknown='ignore')
+    ohe.fit(X_train[categorical_cols])
 
-# Convert categorical columns to one-hot encoding
-X_train_categorical = ohe.transform(X_train[categorical_cols])
-X_test_categorical = ohe.transform(X_test[categorical_cols])
+    X_train_categorical = ohe.transform(X_train[categorical_cols])
+    X_train_final = np.hstack((X_train_categorical.toarray(), X_train.drop(categorical_cols, axis=1)))
 
-# Combine the one-hot encoded categorical columns and numerical columns
-X_train_final = np.hstack((X_train_categorical.toarray(), X_train.drop(categorical_cols, axis=1)))
-X_test_final = np.hstack((X_test_categorical.toarray(), X_test.drop(categorical_cols, axis=1)))
+    model = RandomForestRegressor(n_estimators=30, random_state=42)
+    model.fit(X_train_final, y_train)
 
-# Train the model
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train_final, y_train)
+    try:
+        joblib.dump(model, model_path)
+        joblib.dump(ohe, ohe_path)
+    except Exception:
+        pass
 
 # Get the input parameters as command line arguments
 Jstate = sys.argv[1]

@@ -1,17 +1,18 @@
 <?php
-session_start();// Starting Session
-require('../sql.php'); // Includes Login Script
+session_start();
+require('../sql.php');
 
-// Storing Session
+if (!isset($_SESSION['admin_login_user'])) {
+    header("location: alogin.php");
+    exit;
+}
 $user = $_SESSION['admin_login_user'];
-
-if(!isset($_SESSION['admin_login_user'])){
-header("location: ../index.php");} // Redirecting To Home Page
-$query4 = "SELECT * from admin where admin_name ='$user'";
-              $ses_sq4 = mysqli_query($conn, $query4);
-              $row4 = mysqli_fetch_assoc($ses_sq4);
-              $para1 = $row4['admin_id'];
-              $para2 = $row4['admin_name'];
+$stmtA = $conn->prepare("SELECT * from admin where admin_name = ?");
+$stmtA->bind_param("s", $user);
+$stmtA->execute();
+$row4 = $stmtA->get_result()->fetch_assoc();
+$para1 = $row4['admin_id'] ?? '';
+$para2 = $row4['admin_name'] ?? '';
 			  $para3 = $row4['admin_password'];
 			  	  
 ?>

@@ -1,33 +1,38 @@
 <?php
-include 'contact.php';
-include 'sql.php';
-
+require_once 'sql.php';
 
 if (isset($_POST["submit"])) {
-    $user_name = $_POST['user_name'];
-    $user_mobile = $_POST['user_mobile'];
-    $user_email = $_POST['user_email'];
-    $user_address = $_POST['user_address'];
-    $user_message = $_POST['user_message'];
-    $show_modal = false;
+    $user_name = trim($_POST['user_name'] ?? '');
+    $user_mobile = trim($_POST['user_mobile'] ?? '');
+    $user_email = trim($_POST['user_email'] ?? '');
+    $user_address = trim($_POST['user_address'] ?? '');
+    $user_message = trim($_POST['user_message'] ?? '');
 
-    $query = "INSERT into contactus(c_name,c_mobile,c_email,c_address,c_message) VALUES('$user_name','$user_mobile','$user_email','$user_address','$user_message')";
-    $success = $conn->query($query);
+    $stmt = $conn->prepare("INSERT INTO contactus (c_name, c_mobile, c_email, c_address, c_message) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $user_name, $user_mobile, $user_email, $user_address, $user_message);
+    $success = $stmt->execute();
+
+    include 'contact.php';
+
     if ($success) {
         echo "<script type='text/javascript'>
-        $('#mysuccessModal').modal('show');
+        $(document).ready(function() {
+            $('#mysuccessModal').modal('show');
+        });
         function pagesuccessRedirect() {
             location.replace('index.php');
         }</script>";
     } else {
         echo "<script type='text/javascript'>
-        $('#myunsuccessModal').modal('show');
+        $(document).ready(function() {
+            $('#myunsuccessModal').modal('show');
+        });
         function pageunsuccessRedirect() {
             location.replace('contact.php');
         }</script>";
     }
+} else {
+    header("Location: contact.php");
+    exit;
 }
 ?>
-
-<!-- <html>
-</html> -->

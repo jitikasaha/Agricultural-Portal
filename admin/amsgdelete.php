@@ -1,13 +1,19 @@
 <?php
-session_start();// Starting Session
-require('../sql.php'); // Includes Login Script
+session_start();
+require('../sql.php');
 
-    $id = $_GET['id'];
-    $sql = "DELETE FROM contactus WHERE c_id = $id";
-    if (mysqli_query($conn, $sql)) {
-		
-	echo 
-"<script type='text/javascript'>alert('Query Deleted Successfully');
-      window.location='aviewmsg.php';</script>";
-    } 
+if (!isset($_SESSION['admin_login_user'])) {
+    header("location: alogin.php");
+    exit;
+}
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id > 0) {
+    $stmt = $conn->prepare("DELETE FROM contactus WHERE c_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+}
+
+echo "<script type='text/javascript'>alert('Query Deleted Successfully'); window.location='aviewmsg.php';</script>";
+exit;
 ?>

@@ -34,7 +34,7 @@
           <div class="navbar-collapse-header">
             <div class="row">
               <div class="col-10 collapse-brand">
-                <a href="../index.html">
+                <a href="../index.php">
                   <img src="../assets/img/nav.png" />
                 </a>
               </div>

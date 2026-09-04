@@ -1,8 +1,13 @@
 import pandas as pd
+import os
 import sys
 
 # Load the dataset into a dataframe
-df = pd.read_csv('ML/rainfall_prediction/rainfall_in_india_1901-2015.csv')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, 'rainfall_in_india_1901-2015.csv')
+if not os.path.exists(csv_path):
+    csv_path = 'ML/rainfall_prediction/rainfall_in_india_1901-2015.csv'
+df = pd.read_csv(csv_path)
 
 # Define a function to predict rainfall for a given district and month
 def predict_rainfall(state, month):
