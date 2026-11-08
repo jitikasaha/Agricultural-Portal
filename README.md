@@ -39,7 +39,7 @@
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/vaishnavid0604/agriculture-portal.git
+   git clone https://github.com/SamarthGouda/Agricultural-Portal.git
    cd agriculture-portal
    ```
 2. Install Python ML dependencies:
